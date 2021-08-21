@@ -2,7 +2,7 @@
 
 #include "pch.h"
 #include <vector>
-#include <ShlObj.h>
+#include <ShlObj_core.h>
 #include <Windows.h>
 #include <TlHelp32.h>
 #include <iostream>
@@ -14,6 +14,25 @@
 #pragma comment(lib, "ntdll") 
 #define NT_SUCCESS(status) (status >= 0)
 #define STATUS_INFO_LENGTH_MISMATCH      ((NTSTATUS)0xC0000004L)
+
+void wait() {
+    char a;
+    scanf_s("%c", &a);
+}
+
+const char * WinGetEnv(const char * name)
+{
+    const DWORD buffSize = 65535;
+    static char buffer[buffSize];
+    if (GetEnvironmentVariableA(name, buffer, buffSize))
+    {
+        return buffer;
+    }
+    else
+    {
+        return 0;
+    }
+}
 
 std::vector<DWORD> FindSC2() {
     std::vector<DWORD> v_pid;
@@ -46,9 +65,19 @@ std::vector<DWORD> FindSC2() {
 
 std::string FindSC2Path(bool get_excutepath = FALSE) {
     wchar_t szPath[MAX_PATH] = { 0, };
-    SHGetSpecialFolderPath(NULL, szPath, CSIDL_MYDOCUMENTS, FALSE);
+    HRESULT r = SHGetSpecialFolderPathW(NULL, szPath, CSIDL_PERSONAL, FALSE);
     std::wstring ws(szPath);
     std::string excuteinfo_path(ws.begin(), ws.end());
+
+    if (r != S_OK) {
+        excuteinfo_path = WinGetEnv("USERPROFILE");
+        excuteinfo_path += "\\Documents";
+        if (excuteinfo_path == "") {
+            printf("Can't find ExcuteInfo.txt file.\nError code: 0x%08X", r, "\n");
+            return "";
+        }
+    }
+
     excuteinfo_path += "\\StarCraft II\\ExecuteInfo.txt";
     std::ifstream file(excuteinfo_path);
     std::string excuteinfo;
@@ -56,10 +85,7 @@ std::string FindSC2Path(bool get_excutepath = FALSE) {
         std::getline(file, excuteinfo);
         file.close();
     }
-    if (excuteinfo == "") {
-        printf("Can't find ExcuteInfo.txt file. \n");
-        return "";
-    }
+
 
     std::string::size_type start, end;
     // excuteinfo 에서 설치 경로를 찾는다.
@@ -70,7 +96,7 @@ std::string FindSC2Path(bool get_excutepath = FALSE) {
     if (get_excutepath) {
         excuteinfo += "Support\\SC2Switcher.exe";
     }
-
+    printf("Found SC2.exe. \n Path: %s", excuteinfo);
     return excuteinfo;
 }
 
@@ -78,7 +104,7 @@ void RunSC2() {
     std::string sc2exe = FindSC2Path(true);
     //std::wstring stemp = std::wstring(sc2exe.begin(), sc2exe.end());
     //LPCWSTR sw = stemp.c_str();
-    if (sc2exe != "") 
+    if (sc2exe != "")
         ShellExecuteA(NULL, "open", sc2exe.c_str(), NULL, NULL, SW_SHOWNORMAL);
 }
 
@@ -129,13 +155,15 @@ extern "C" NTSTATUS NTAPI NtQueryObject(
 
 int main()
 {
+    setlocale(LC_ALL, "");
+
     std::vector<DWORD> v_pid = FindSC2();
 
     if (v_pid.size() == 0) {
-        printf("Failed to Find StarCraft II\n");
+        printf("Failed to Find StarCraft II.\nThe fisrt SC2 must be run from blizard app.\n");
+        printf("\n현재 실행된 스타2를 찾지 못했습니다.\n 최초 클라이언트는 블리자드 앱을 통해서 실행 바랍니다.\n");
         // run SC2
-        char a;
-        scanf_s("%c", &a);
+        wait();
         return 1;
     }
 
@@ -220,20 +248,25 @@ int main()
                 ::DuplicateHandle(hProcess, h, ::GetCurrentProcess(), &hTarget,
                     0, FALSE, DUPLICATE_CLOSE_SOURCE);
                 ::CloseHandle(hTarget);
-                printf("Found and closed %s\n", name->Buffer);
+                printf("Found and closed %S\n", name->Buffer);
             }
         }
     }
     printf("------------------------\n");
     printf("\nReady to run multiple SC2 instances is complete.\n");
+    printf("스타2 멀티 클라이언트 실행을 위한 작업이 완료 되었습니다.\n");
     printf("\n------------------------\n");
     printf("\n Author: 기동아 (3-S2-1-1137080)\n\n Email: ehdrl3600@naver.com\n\n");
     printf("------------------------\n\n");
     printf("  If you want run SC2(32bit), Press the Enter key.\n");
     printf("    else, Close this program.\n");
+    printf(" 스타2 실행을 원한다면, 엔터 키를 눌러주세요.\n");
+    printf("만약 원치 않는다면, 이 프로그램을 종료 해주세요.\n");
+    printf("\n\n     백신 등의 이유로 스타2가 실행이 되지 않을 수 있습니다.\n");
+    printf("     그런 경우, 블리자드 앱에서 스타2를 실행하면 정상적으로 멀티 클라이언트 실행이 됩니다.");
 
-    char a;
-    scanf_s("%c", &a);
+
+    wait();
     RunSC2();
 
     return 0;
