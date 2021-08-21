@@ -134,6 +134,8 @@ int main()
     if (v_pid.size() == 0) {
         printf("Failed to Find StarCraft II\n");
         // run SC2
+        char a;
+        scanf_s("%c", &a);
         return 1;
     }
 
