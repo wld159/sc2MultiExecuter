@@ -4,7 +4,7 @@
 
 It's very simple program.
 
-Run and Press Enter, and Enjoy multiple StarCraft II instances.
+Run and Press Enter, and Enjoy multiple StarCraft II clients(instances).
 
 
 # Build Environment
