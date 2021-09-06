@@ -201,7 +201,9 @@ int main()
         }
 
         // 타겟 핸들 이름 설정
-        WCHAR targetName0[256], targetName1[256], targetName2[256], targetName3[256];
+        WCHAR targetName0[256], targetName1[256], targetName2[256], targetName3[256], 
+             targetName4[256], targetName5[256], targetName6[256], 
+            targetName7[256], targetName8[256], targetName9[256];
         DWORD sessionId;
         ::ProcessIdToSessionId(pid, &sessionId);
         ::swprintf_s(targetName0,
@@ -216,10 +218,28 @@ int main()
         ::swprintf_s(targetName3,
             L"\\Sessions\\1\\BaseNamedObjects\\StarCraft II IPC Mem",
             sessionId);
-        auto len0 = ::wcslen(targetName0);
-        auto len1 = ::wcslen(targetName1);
-        auto len2 = ::wcslen(targetName2);
-        auto len3 = ::wcslen(targetName3);
+        ::swprintf_s(targetName4,
+            L"\\Sessions\\2\\BaseNamedObjects\\StarCraft II Game Application",
+            sessionId);
+        ::swprintf_s(targetName5,
+            L"\\Sessions\\2\\BaseNamedObjects\\StarCraft II",
+            sessionId);
+        ::swprintf_s(targetName6,
+            L"\\Sessions\\2\\BaseNamedObjects\\StarCraft II IPC Mem",
+            sessionId);
+        ::swprintf_s(targetName7,
+            L"\\Sessions\\3\\BaseNamedObjects\\StarCraft II Game Application",
+            sessionId);
+        ::swprintf_s(targetName8,
+            L"\\Sessions\\3\\BaseNamedObjects\\StarCraft II",
+            sessionId);
+        ::swprintf_s(targetName9,
+            L"\\Sessions\\3\\BaseNamedObjects\\StarCraft II IPC Mem",
+            sessionId);
+        size_t len0 = ::wcslen(targetName0);
+        size_t len1 = ::wcslen(targetName1);
+        size_t len2 = ::wcslen(targetName2);
+        size_t len3 = ::wcslen(targetName3);
 
 
         // 모든 핸들을 현재 프로세스로 복제
@@ -243,7 +263,13 @@ int main()
                 (::_wcsnicmp(name->Buffer, targetName0, len0) == 0 ||
                     ::_wcsnicmp(name->Buffer, targetName1, len1) == 0 ||
                     ::_wcsnicmp(name->Buffer, targetName2, len2) == 0 ||
-                    ::_wcsnicmp(name->Buffer, targetName3, len3) == 0)) {
+                    ::_wcsnicmp(name->Buffer, targetName3, len3) == 0 ||
+                    ::_wcsnicmp(name->Buffer, targetName4, len1) == 0 ||
+                    ::_wcsnicmp(name->Buffer, targetName5, len2) == 0 ||
+                    ::_wcsnicmp(name->Buffer, targetName6, len3) == 0 ||
+                    ::_wcsnicmp(name->Buffer, targetName7, len1) == 0 ||
+                    ::_wcsnicmp(name->Buffer, targetName8, len2) == 0 ||
+                    ::_wcsnicmp(name->Buffer, targetName9, len3) == 0)) {
                 // found it!
                 ::DuplicateHandle(hProcess, h, ::GetCurrentProcess(), &hTarget,
                     0, FALSE, DUPLICATE_CLOSE_SOURCE);
