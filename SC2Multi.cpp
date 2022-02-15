@@ -8,7 +8,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <tchar.h>
+//#include <tchar.h>
 
 #include <memory> 
 #pragma comment(lib, "ntdll") 
@@ -160,8 +160,20 @@ int main()
     std::vector<DWORD> v_pid = FindSC2();
 
     if (v_pid.size() == 0) {
-        printf("Failed to Find StarCraft II.\nThe fisrt SC2 must be run from blizard app.\n");
-        printf("\n현재 실행된 스타2를 찾지 못했습니다.\n 최초 클라이언트는 블리자드 앱을 통해서 실행 바랍니다.\n");
+        printf("Failed to Find StarCraft II.\n");
+        printf("\n\n Can you run SC2? (Y/N)\n\n");
+        printf("\n 현재 실행된 스타2를 찾지 못했습니다.\n\n");
+        printf(" \n");
+
+        printf("\n 스타2를 실행하시겠습니까? (Y/N)\n\n");
+
+        char key;
+        scanf_s("%c", &key);
+
+        if (key == 'y' || key == 'Y')
+            RunSC2();
+        printf("\n If SC2 has updated, The fisrt SC2 must be run from blizard app.\n");
+        printf("\n 스타2 업데이트가 있을 시, 최초 클라이언트는 블리자드 앱을 통해서 실행 바랍니다.");
         // run SC2
         wait();
         return 1;
@@ -179,7 +191,6 @@ int main()
                 ::GetLastError());
             return 1;
         }
-
 
         // 선택한 프로세스의 핸들 얻기
         ULONG size = 1 << 10;
@@ -201,9 +212,8 @@ int main()
         }
 
         // 타겟 핸들 이름 설정
-        WCHAR targetName0[256], targetName1[256], targetName2[256], targetName3[256], 
-             targetName4[256], targetName5[256], targetName6[256], 
-            targetName7[256], targetName8[256], targetName9[256];
+        WCHAR targetName0[256], targetName1[256], targetName2[256], targetName3[256],
+            targetTest1[256], targetTest2[256], targetTest3[256], searchName[256];
         DWORD sessionId;
         ::ProcessIdToSessionId(pid, &sessionId);
         ::swprintf_s(targetName0,
@@ -218,29 +228,11 @@ int main()
         ::swprintf_s(targetName3,
             L"\\Sessions\\1\\BaseNamedObjects\\StarCraft II IPC Mem",
             sessionId);
-        ::swprintf_s(targetName4,
-            L"\\Sessions\\2\\BaseNamedObjects\\StarCraft II Game Application",
-            sessionId);
-        ::swprintf_s(targetName5,
-            L"\\Sessions\\2\\BaseNamedObjects\\StarCraft II",
-            sessionId);
-        ::swprintf_s(targetName6,
-            L"\\Sessions\\2\\BaseNamedObjects\\StarCraft II IPC Mem",
-            sessionId);
-        ::swprintf_s(targetName7,
-            L"\\Sessions\\3\\BaseNamedObjects\\StarCraft II Game Application",
-            sessionId);
-        ::swprintf_s(targetName8,
-            L"\\Sessions\\3\\BaseNamedObjects\\StarCraft II",
-            sessionId);
-        ::swprintf_s(targetName9,
-            L"\\Sessions\\3\\BaseNamedObjects\\StarCraft II IPC Mem",
-            sessionId);
-        size_t len0 = ::wcslen(targetName0);
-        size_t len1 = ::wcslen(targetName1);
-        size_t len2 = ::wcslen(targetName2);
-        size_t len3 = ::wcslen(targetName3);
+        ::swprintf_s(searchName, L"\\BaseNamedObjects\\StarCraft II", sessionId);
 
+        size_t len0 = ::wcslen(targetName0), len1 = ::wcslen(targetName1),
+            len2 = ::wcslen(targetName2), len3 = ::wcslen(targetName3);
+        bool foundSession = false;
 
         // 모든 핸들을 현재 프로세스로 복제
         auto info = reinterpret_cast<PROCESS_HANDLE_SNAPSHOT_INFORMATION*>(buffer.get());
@@ -258,19 +250,43 @@ int main()
             if (!NT_SUCCESS(status))
                 continue;
 
+
             auto name = reinterpret_cast<UNICODE_STRING*>(nameBuffer);
+
+            if (!foundSession && name->Buffer && name->Length> 20 && wcsstr(name->Buffer, searchName))
+            {
+                wchar_t sessionName[12];
+                wmemcpy_s(sessionName, 12, name->Buffer, 12);
+
+                bool ptr;
+                if (name->Buffer)
+                    ptr = wmemchr(name->Buffer, L'BaseNamedObjects', 30) != NULL;
+
+                std::wstring ws(sessionName);
+                std::string sessionString = std::string(ws.begin(), ws.end());
+                sessionString = std::string(sessionString.begin(), sessionString.begin() + 12);
+                printf("Found Sessions Name: %s\n", sessionString.c_str());
+                std::string target1 = sessionString + "BaseNamedObjects\\StarCraft II Game Application",
+                    target2 = sessionString + "BaseNamedObjects\\StarCraft II",
+                    target3 = sessionString + "BaseNamedObjects\\StarCraft II IPC Mem";
+
+                ws = std::wstring(target1.begin(), target1.end());
+                wmemcpy_s(targetTest1, target1.size(), ws.c_str(), target1.size());
+                ws = std::wstring(target2.begin(), target2.end());
+                wmemcpy_s(targetTest2, target2.size(), ws.c_str(), target2.size());
+                ws = std::wstring(target3.begin(), target3.end());
+                wmemcpy_s(targetTest3, target3.size(), ws.c_str(), target3.size());
+
+                foundSession = true;
+            }
+
             if (name->Buffer &&
                 (::_wcsnicmp(name->Buffer, targetName0, len0) == 0 ||
-                    ::_wcsnicmp(name->Buffer, targetName1, len1) == 0 ||
-                    ::_wcsnicmp(name->Buffer, targetName2, len2) == 0 ||
-                    ::_wcsnicmp(name->Buffer, targetName3, len3) == 0 ||
-                    ::_wcsnicmp(name->Buffer, targetName4, len1) == 0 ||
-                    ::_wcsnicmp(name->Buffer, targetName5, len2) == 0 ||
-                    ::_wcsnicmp(name->Buffer, targetName6, len3) == 0 ||
-                    ::_wcsnicmp(name->Buffer, targetName7, len1) == 0 ||
-                    ::_wcsnicmp(name->Buffer, targetName8, len2) == 0 ||
-                    ::_wcsnicmp(name->Buffer, targetName9, len3) == 0)) {
+                    ::_wcsnicmp(name->Buffer, targetTest1, len1) == 0 ||
+                    ::_wcsnicmp(name->Buffer, targetTest2, len2) == 0 ||
+                    ::_wcsnicmp(name->Buffer, targetTest3, len3) == 0)) {
                 // found it!
+
                 ::DuplicateHandle(hProcess, h, ::GetCurrentProcess(), &hTarget,
                     0, FALSE, DUPLICATE_CLOSE_SOURCE);
                 ::CloseHandle(hTarget);
@@ -289,7 +305,7 @@ int main()
     printf(" 스타2 실행을 원한다면, 엔터 키를 눌러주세요.\n");
     printf("만약 원치 않는다면, 이 프로그램을 종료 해주세요.\n");
     printf("\n\n     백신 등의 이유로 스타2가 실행이 되지 않을 수 있습니다.\n");
-    printf("     그런 경우, 블리자드 앱에서 스타2를 실행하면 정상적으로 멀티 클라이언트 실행이 됩니다.");
+    printf("     그런 경우, 블리자드 앱에서 스타2를 실행하면 정상적으로 멀티 클라이언트 실행이 됩니다.\n");
 
 
     wait();
